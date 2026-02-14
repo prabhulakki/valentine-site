@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dear Potti, Will you be my Valentine?</title>
+  <style>
+    :root{
+      --bg1:#0f1020;
+      --bg2:#240a2a;
+      --card:#ffffff0f;
+      --border:#ffffff20;
+      --text:#f7f7fb;
+      --muted:#cfcfe6;
+      --yes:#22c55e;
+      --no:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow:hidden;
+      background: radial-gradient(1200px 800px at 20% 20%, #2b2e6b55 0%, transparent 60%),
+                  radial-gradient(900px 700px at 80% 30%, #b5179e40 0%, transparent 55%),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+
+    .card{
+      width:min(520px, 92vw);
+      padding:28px 22px;
+      border-radius:22px;
+      background: var(--card);
+      border:1px solid var(--border);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 30px 80px #00000055;
+      position:relative;
+    }
+
+    .badge{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:7px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      font-size:13px;
+      background:#ffffff08;
+    }
+
+    h1{
+      margin:14px 0 8px;
+      font-size: clamp(26px, 4vw, 36px);
+      letter-spacing:-0.02em;
+    }
+    p{
+      margin:0 0 18px;
+      color:var(--muted);
+      line-height:1.45;
+      font-size:15px;
+    }
+
+    .stage{
+      margin-top:18px;
+      height:190px;
+      position:relative;
+      border-radius:18px;
+      border:1px dashed #ffffff22;
+      background:#00000018;
+      overflow:hidden;
+    }
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      border-radius:14px;
+      padding:14px 20px;
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:0.2px;
+      box-shadow: 0 10px 25px #00000040;
+      transition: transform 180ms ease, filter 180ms ease;
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .btn:active{ transform: scale(0.98); }
+    .btn:hover{ filter: brightness(1.05); }
+
+    /* YES grows using transform scale */
+    #yesBtn{
+      background: linear-gradient(180deg, #34d399, var(--yes));
+      color:#06210f;
+      position:absolute;
+      left: 40px;
+      top: 90px;
+      transform-origin:center;
+    }
+
+    /* NO moves around */
+    #noBtn{
+      background: linear-gradient(180deg, #fb7185, var(--no));
+      color:#2a0707;
+      position:absolute;
+      left: 260px;
+      top: 90px;
+    }
+
+    .footer{
+      margin-top:16px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color:#ffffff70;
+      font-size:12px;
+    }
+
+    /* Modal / result */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:#00000080;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal{
+      width:min(560px, 96vw);
+      background:#0b0c18cc;
+      border:1px solid #ffffff22;
+      border-radius:22px;
+      padding:22px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 30px 90px #00000070;
+      text-align:center;
+    }
+    .modal h2{
+      margin:6px 0 10px;
+      font-size: clamp(24px, 4vw, 34px);
+    }
+    .modal p{
+      margin:0 0 16px;
+      color:#ffffffc0;
+    }
+    .modal .mini{
+      font-size:12px;
+      color:#ffffff80;
+      margin-top:10px;
+    }
+    .modal .close{
+      margin-top:10px;
+      padding:12px 16px;
+      border-radius:14px;
+      background:#ffffff14;
+      border:1px solid #ffffff22;
+      color:#fff;
+      font-weight:700;
+    }
+
+    /* Heart trail */
+    .heart{
+      position:fixed;
+      pointer-events:none;
+      width:16px; height:16px;
+      transform: translate(-50%, -50%);
+      opacity:0.9;
+      filter: drop-shadow(0 6px 10px #00000055);
+      animation: floatUp 900ms ease forwards;
+      z-index:40;
+    }
+    .heart::before{
+      content:"❤";
+      font-size:16px;
+      line-height:16px;
+      display:block;
+    }
+    @keyframes floatUp{
+      to{ transform: translate(-50%, -85px) scale(0.9); opacity:0; }
+    }
+
+    /* Confetti canvas */
+    canvas#confetti{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:45;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <div class="card">
+    <div class="badge">💘 Valentine Mode • hover/catch the “NO”</div>
+    <h1>Will you be my Valentine?</h1>
+    <p>Choose wisely 😌 (Hint: the buttons have opinions.)</p>
+
+    <div class="stage" id="stage" aria-label="Valentine interaction stage">
+      <button class="btn" id="yesBtn">YES 💚</button>
+      <button class="btn" id="noBtn">NO 🙈</button>
+    </div>
+
+    <div class="footer">
+      <span>Tip: Try to click “NO” 😄</span>
+      <span>Works on desktop + mobile</span>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Result dialog">
+    <div class="modal">
+      <div style="font-size:42px; margin-bottom:6px;">🥳💖</div>
+      <h2>Yay! It’s a date!</h2>
+      <p>Now you owe me a selfie + a cute plan 😄</p>
+      <button class="btn close" id="closeBtn">Close</button>
+      <div class="mini">Made with playful JS ✨</div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Helpers ----------
+    const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+    const rand = (min, max) => Math.random() * (max - min) + min;
+
+    // ---------- Elements ----------
+    const stage = document.getElementById('stage');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const overlay = document.getElementById('overlay');
+    const closeBtn = document.getElementById('closeBtn');
+
+    // ---------- YES growth logic ----------
+    let yesScale = 1;
+    function growYes() {
+      yesScale = clamp(yesScale + 0.08, 1, 2.4);
+      yesBtn.style.transform = `scale(${yesScale})`;
+    }
+
+    // ---------- NO dodge logic ----------
+    function moveNoButton() {
+      const stageRect = stage.getBoundingClientRect();
+      const noRect = noBtn.getBoundingClientRect();
+
+      // Compute max allowed positions inside the stage
+      const padding = 12;
+      const maxX = stageRect.width - noRect.width - padding;
+      const maxY = stageRect.height - noRect.height - padding;
+
+      // Random target, biased away from YES to reduce overlap
+      const yesRect = yesBtn.getBoundingClientRect();
+      let tries = 0;
+      let x, y;
+
+      do {
+        x = rand(padding, maxX);
+        y = rand(padding, maxY);
+        tries++;
+        // Avoid placing too close to YES button
+        const candidateNo = {
+          left: stageRect.left + x,
+          top: stageRect.top + y,
+          right: stageRect.left + x + noRect.width,
+          bottom: stageRect.top + y + noRect.height
+        };
+        const overlap =
+          !(candidateNo.right < yesRect.left - 10 ||
+            candidateNo.left > yesRect.right + 10 ||
+            candidateNo.bottom < yesRect.top - 10 ||
+            candidateNo.top > yesRect.bottom + 10);
+
+        if (!overlap) break;
+      } while (tries < 8);
+
+      noBtn.style.left = `${x}px`;
+      noBtn.style.top  = `${y}px`;
+
+      // Little wiggle
+      noBtn.animate(
+        [{ transform: 'rotate(0deg)' }, { transform: 'rotate(-6deg)' }, { transform: 'rotate(6deg)' }, { transform: 'rotate(0deg)' }],
+        { duration: 220, easing: 'ease-out' }
+      );
+    }
+
+    // Desktop: dodge on hover / mouseenter
+    noBtn.addEventListener('mouseenter', () => {
+      moveNoButton();
+      growYes();
+    });
+
+    // Mobile: dodge on touchstart (before click)
+    noBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      moveNoButton();
+      growYes();
+    }, { passive: false });
+
+    // If someone manages to click NO anyway (rare), still grow YES and move NO
+    noBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      moveNoButton();
+      growYes();
+    });
+
+    // ---------- YES click: confetti + modal ----------
+    yesBtn.addEventListener('click', () => {
+      popConfetti();
+      overlay.style.display = 'flex';
+    });
+
+    closeBtn.addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    });
+
+    // ---------- Heart trail ----------
+    let lastHeart = 0;
+    window.addEventListener('pointermove', (e) => {
+      const now = performance.now();
+      if (now - lastHeart < 35) return;
+      lastHeart = now;
+      spawnHeart(e.clientX, e.clientY);
+    });
+
+    function spawnHeart(x, y) {
+      const el = document.createElement('div');
+      el.className = 'heart';
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      // Slight random scale
+      const s = rand(0.85, 1.35);
+      el.style.transform = `translate(-50%,-50%) scale(${s})`;
+      // Randomly tint using hue rotation
+      el.style.filter = `hue-rotate(${Math.floor(rand(-20, 40))}deg) drop-shadow(0 6px 10px #00000055)`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    }
+
+    // ---------- Confetti (canvas) ----------
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas(){
+      canvas.width = window.innerWidth * devicePixelRatio;
+      canvas.height = window.innerHeight * devicePixelRatio;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let confettiParticles = [];
+    let confettiRunning = false;
+
+    function popConfetti(){
+      const count = 160;
+      const originX = window.innerWidth / 2;
+      const originY = window.innerHeight / 2 - 40;
+
+      for(let i=0;i<count;i++){
+        confettiParticles.push({
+          x: originX,
+          y: originY,
+          vx: rand(-6, 6),
+          vy: rand(-10, -2),
+          g: rand(0.16, 0.28),
+          size: rand(4, 8),
+          rot: rand(0, Math.PI),
+          vr: rand(-0.2, 0.2),
+          life: rand(60, 110)
+        });
+      }
+      if(!confettiRunning){
+        confettiRunning = true;
+        requestAnimationFrame(tickConfetti);
+      }
+    }
+
+    function tickConfetti(){
+      ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+
+      confettiParticles = confettiParticles.filter(p => p.life > 0);
+      for(const p of confettiParticles){
+        p.life -= 1;
+        p.vy += p.g;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+
+        // No fixed colors requested? We'll still use varied hues (not a single fixed color palette).
+        const hue = (p.x * 0.6 + p.y * 0.3) % 360;
+        ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+        ctx.restore();
+      }
+
+      if(confettiParticles.length > 0){
+        requestAnimationFrame(tickConfetti);
+      } else {
+        confettiRunning = false;
+        ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+      }
+    }
+
+    // ---------- Initial placement tweaks ----------
+    // Ensure NO isn't overlapping on small screens
+    function safeInitialLayout(){
+      const stageRect = stage.getBoundingClientRect();
+      if (stageRect.width < 360) {
+        yesBtn.style.left = '24px';
+        noBtn.style.left = '180px';
+      }
+    }
+    window.addEventListener('load', safeInitialLayout);
+  </script>
+</body>
+</html>
